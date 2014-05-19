@@ -26,19 +26,24 @@ class CrystalLCD(object):
             command.append(len(data) + 2)  # add in the col + row bytes
         else:
             raise Exception("Too much text!")
-
+        # make sure the row and col parameters are in range
         if 19 >= row >= 0 and 3 >= col >= 0:
             command.append(col)
             command.append(row)
         else:
             raise Exception("Row and Col outside of range!")
 
+        # append each of the characters
         for c in data:
             command.append(c)
 
+        # calculate the CRC
         crc = crc16(command)
+        #append the CRC in reverse order
         for c in crc[::-1]:
             command.append(c)
+
+        # write the command to the serial port
         self.ser.write(command)
 
     def build_command(self, code, data=None):
