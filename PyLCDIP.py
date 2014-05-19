@@ -26,6 +26,7 @@ class CrystalLCD(object):
             command.append(len(data) + 2)  # add in the col + row bytes
         else:
             raise Exception("Too much text!")
+        
         # make sure the row and col parameters are in range
         if 19 >= row >= 0 and 3 >= col >= 0:
             command.append(col)
