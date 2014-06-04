@@ -1,13 +1,13 @@
 __author__ = 'Josh'
 
-import socket
-import serial
-
+import serial  # to access the serial port
+import threading  # to run the serial read input without blocking
 
 class CrystalLCD(object):
     port = 0
     ser = serial.Serial()
     command = []
+    rxbuffer = []
 
     def open(self):
         self.ser.close()
@@ -26,7 +26,7 @@ class CrystalLCD(object):
             command.append(len(data) + 2)  # add in the col + row bytes
         else:
             raise Exception("Too much text!")
-        
+
         # make sure the row and col parameters are in range
         if 19 >= row >= 0 and 3 >= col >= 0:
             command.append(col)
@@ -62,8 +62,8 @@ class CrystalLCD(object):
     def check_input(self, data):
         """Check the list of bytes for input"""
         # Format: Command, Size, Data[], CRC16[2]
-        # if we don't have any remaining data, let's stop
-        if len(data) == 0:
+        # if we don't have any remaining data or we don't have enough data for a full packet, let's stop
+        if len(data) == 0 or len(data) < 5:
             return
         # if the data is in string format, convert it to int/byte
         if type(data[0]) is str:
@@ -73,7 +73,7 @@ class CrystalLCD(object):
             size = data[1]  # should always be one with keypresses
             keyin = data[2]
             print "Key In: ", keyin
-            crc = data[3:4]  # this should really combine the two bytes
+            crc = data[3:5]  # this should really combine the two bytes
             if keyin == 1:
                 print "KEY_UP_PRESS"
             elif keyin == 2:
@@ -162,80 +162,13 @@ def crc16(data, seed=0xFFFF):  # 0x0FFFF
     return dump(seed)
 
 
-def CalcCRC():
-    rin = "X"
-    inbytes = []
-    while rin != "":
-        rin = raw_input("Enter hex byte: ")
-        if rin != "":
-            b = int(rin, 16)  # base 16 is hex
-            print "%#x added to array" % b
-            inbytes.append(b)
-        else:
-            print "Completed input: ", rin
-    crc = crc16(inbytes)
 
 
-def SendCustom():
-    print "IMPORTANT: Make sure your message is less than 20 characters."
-    ctext = raw_input("What message would you like to send?")
-    lcd.write_text(ctext[:20]) # trim to 20 chars
 
 
-def WriteIP():
-    #ip = socket.gethostbyname(socket.gethostname())
-    ip = ([(s.connect(('8.8.8.8', 80)), s.getsockname()[0], s.close()) for s in [socket.socket(socket.AF_INET, socket.SOCK_DGRAM)]][0][1])
-    lcd.write_text(ip)
 
 
-def ReadSerial():
-    toread = lcd.ser.inWaiting()
-    print "Bytes waiting: ", toread
-    if toread > 0:
-        read = lcd.ser.read(toread)
-        print "Bytes read: ", map(hex,map(ord, read))
-        lcd.check_input(read)
 
-
-lcd = CrystalLCD()
-
-res = raw_input("Would you like to open the COM port? [Y/n]")
-if res[0].lower() == "y":
-    lcd.port = 2
-    lcd.open()
-selection = "0"
-while selection != "x":
-    print "======================"
-    print "1. Clear Screen"
-    print "2. Send Hello World!"
-    print "3. Send custom text"
-    print "4. Send Local IP"
-    print "5. Read Serial"
-    print ""
-    print "0. CRC16 Calc"
-    print "X. Exit"
-    print ""
-    selection = raw_input("Select an option: ")
-    print "Selected %s" % selection
-    if len(selection) > 0:
-        selection == selection[0].lower()
-    else:
-        selection == "0"
-    if selection == "1":
-        lcd.clear_screen()
-    elif selection == "2":
-        lcd.write_text("Hello World!")
-    elif selection == "3":
-        SendCustom()
-    elif selection == "4":
-        WriteIP()
-    elif selection == "5":
-        ReadSerial()
-    elif selection == "0":
-        CalcCRC()
-else:
-    print "Exiting"
-    #manually close the port?
 
 """ Linux Only Code - dependent on LCDUI
 from lcdui.devices import CrystalFontz
