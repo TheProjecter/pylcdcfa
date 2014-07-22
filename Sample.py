@@ -1,12 +1,12 @@
 __author__ = 'JLyon'
 
-import PyLCDIP
+import PyLCDCFA
 import sys  # to check to see if we have any arguments for automatic running of the script
 import socket  # to automatically detect the IP Address
 import serial.tools.list_ports  # to list the serial ports for easier user selection and auto selection with the script
 import threading  # to run the serial read input without blocking
 
-lcd = PyLCDIP.CrystalLCD()
+lcd = PyLCDCFA.CrystalLCD()
 
 
 def send_custom():
@@ -40,23 +40,12 @@ def calc_crc():
             inbytes.append(b)
         else:
             print "Completed input: ", rin
-    crc = PyLCDIP.crc16(inbytes)
-
-
-def read_serial():
-    toread = lcd.ser.inWaiting()
-    # print "Bytes waiting: ", toread
-    if toread > 0:
-        read = lcd.ser.read(toread)
-        read = map(ord, read)
-        print "Bytes read: ", map(hex,read)  # convert the ASCII byte (int) to a HEX string for display (0xFF)
-        lcd.rxbuffer += read  # TODO should rxbuffer adjustments be thread locked?
-        lcd.check_input(lcd.rxbuffer)
+    crc = PyLCDCFA.crc16(inbytes)
 
 
 def listen_serial():
     while True:
-        read_serial()
+        lcd.read_serial()
 
 # if called with ANY parameter, just hit the first COM port, clear the screen, and write the IP
 if len(sys.argv) > 1:
@@ -103,7 +92,7 @@ else:
         elif selection == "4":
             write_ip()
         elif selection == "5":
-            read_serial()
+            lcd.read_serial()
         elif selection == "6":
             thread = threading.Thread(target=listen_serial())
             thread.start()  # run the listen serial on a background thread
